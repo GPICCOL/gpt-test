@@ -43,32 +43,38 @@ def connect_db(query_arg, vals=[]):
     print(e)
   return query_result
 
-#retrieve observations for a specifica reservation
+#retrieve observations for a specifica reservation id
 rez_id = 2
 query = "SELECT type, content FROM observations WHERE rez_idrez = %(rez_idrez)s"
 result = connect_db(query, rez_id)
 
+#extract and format the observations from the tuple returned
 prompt_items = []
 for row in result:
     prompt_items.append(": ".join(map(str, row)))
 prompt_text = "; ".join(prompt_items)
 
+#Create the prompt for the review using a base and the observations
 # prompt_base = "Write a positive restaurant review in the syle of Yelp. Vary the degree of emphsis, making one review positive, one very positive and one over the top positive and excited. Keep each one under 100 words. Use only the following elements: "
 prompt_base = "Write a positive restaurant review in the syle of Yelp. Keep it under 100 words. Use only the following elements: "
 
 prompt_text = prompt_base + prompt_text
 
+#Contact GPT3 to create the review and extract the text of the response
 response = openai.Completion.create(
   model="text-davinci-003",
   prompt=prompt_text,
   max_tokens=300,
   temperature=0.7
 )
-prompt_text
-response
+# prompt_text
+# response
 review = response["choices"][0]["text"]
+
+#Create the prompt for the title using a base and the  review text
 prompt_title = "Write a title of less than 10 words for the following restaurant review: " + review
 
+#Contact GPT3 to create the review and extract the text of the response (the title)
 response = openai.Completion.create(
   model="text-davinci-003",
   prompt=prompt_title,
@@ -77,6 +83,7 @@ response = openai.Completion.create(
 )
 title = response["choices"][0]["text"]
 
+#Write the title and response in the review table using the correct foreign key value
 query = "INSERT INTO reviews (title, content, rez_idrez) VALUES (%s, %s, %s)"
 records = [
   (title, review, rez_id),
