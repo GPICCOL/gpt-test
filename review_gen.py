@@ -13,9 +13,10 @@ host_url = os.getenv("DATABASE_URL")
 user = os.getenv("USERNAME")
 password = os.getenv("PWD")
 db = "gpt-db"
+rez_id = 2
 
-#function definitions
-#read and write from a MySQL DB instance
+#Function definitions
+#Read and write from a MySQL DB instance function
 def connect_db(query_arg, vals=[]):
   query_type = query_arg.upper().split(' ', 1)[0]
   try:
@@ -43,8 +44,9 @@ def connect_db(query_arg, vals=[]):
     print(e)
   return query_result
 
+#Prompt creation function
+
 #retrieve observations for a specifica reservation id
-rez_id = 2
 query = "SELECT type, content FROM observations WHERE rez_idrez = %(rez_idrez)s"
 result = connect_db(query, rez_id)
 
@@ -55,8 +57,8 @@ for row in result:
 prompt_text = "; ".join(prompt_items)
 
 #Create the prompt for the review using a base and the observations
-# prompt_base = "Write a positive restaurant review in the syle of Yelp. Vary the degree of emphsis, making one review positive, one very positive and one over the top positive and excited. Keep each one under 100 words. Use only the following elements: "
-prompt_base = "Write a positive restaurant review in the syle of Yelp. Keep it under 100 words. Use only the following elements: "
+prompt_base = "Write a positive restaurant review in the syle of Yelp. Vary the degree of emphsis, making one review positive, one very positive and one over the top positive and excited. Keep each one under 100 words. Use only the following elements: "
+#prompt_base = "Write a positive restaurant review in the syle of Yelp. Keep it under 100 words. Use only the following elements: "
 
 prompt_text = prompt_base + prompt_text
 
@@ -67,12 +69,20 @@ response = openai.Completion.create(
   max_tokens=300,
   temperature=0.7
 )
-# prompt_text
-# response
-review = response["choices"][0]["text"]
+prompt_text
+response
+reviews = response["choices"][0]["text"]
+reviews = list(reviews.split(sep="\n\n"))
+reviews = reviews[1:]
+prompt_reviews = []
+for review in reviews:
+  prompt_reviews.append(review.split(sep=": ")[1])
+
+prompt_text = "; ".join(prompt_reviews)
 
 #Create the prompt for the title using a base and the  review text
-prompt_title = "Write a title of less than 10 words for the following restaurant review: " + review
+prompt_title = "Write a title of less than 10 words for each of the following restaurant " + str(len(prompt_reviews)) + " reviews. Use a numbered list with a colon (:) as the separator between the number and the title: " + prompt_text
+prompt_title
 
 #Contact GPT3 to create the review and extract the text of the response (the title)
 response = openai.Completion.create(
@@ -81,10 +91,15 @@ response = openai.Completion.create(
   max_tokens=120,
   temperature=0.7
 )
-title = response["choices"][0]["text"]
+titles = response["choices"][0]["text"]
+titles = list(titles.split(sep="\n\n"))
+titles = titles[1:]
 
-#Write the title and response in the review table using the correct foreign key value
+#Loop through the reviews and titles to create the records value
+#Write the titles and responses in the review table using the correct foreign key value
 query = "INSERT INTO reviews (title, content, rez_idrez) VALUES (%s, %s, %s)"
+# for item in items:
+#   # TODO: write code...
 records = [
   (title, review, rez_id),
   # ("title4", "content4", rez_id),
