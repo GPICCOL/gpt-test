@@ -16,6 +16,16 @@ db = "gpt-db"
 rez_id = 2
 
 #Function definitions
+#Connect to GPT and pass the prompt, max_tokens and temperature
+def invoke_gpt(text = "tell me something", tokens = 300, temp = 0.7):
+  response = openai.Completion.create(
+    model="text-davinci-003",
+    prompt=text,
+    max_tokens=tokens,
+    temperature=temp
+    )
+  return response
+
 #Read and write from a MySQL DB instance function
 def connect_db(query_arg, vals=[]):
   query_type = query_arg.upper().split(' ', 1)[0]
@@ -72,27 +82,19 @@ prompt_base = "Write 3 positive restaurant reviews in the syle of Yelp. Vary the
 prompt_text = prompt_base + prompt_text
 
 #Contact GPT3 to create the review and extract the text of the response
-response = openai.Completion.create(
-  model="text-davinci-003",
-  prompt=prompt_text,
-  max_tokens=300,
-  temperature=0.7
-)
+response = invoke_gpt(prompt_text, 300)
+
+# response = openai.Completion.create(
+#   model="text-davinci-003",
+#   prompt=prompt_text,
+#   max_tokens=300,
+#   temperature=0.7
+# )
 
 prompt_text = response_extract(response["choices"][0]["text"])
 
-
-# reviews = response["choices"][0]["text"]
-# reviews = list(reviews.split(sep="**separator**"))
-# reviews = reviews[1:]
-# prompt_reviews = []
-# for review in reviews:
-#   prompt_reviews.append(review.split(sep=": ")[1])
-# 
-# prompt_text = "; ".join(prompt_reviews)
-
 #Create the prompt for the title using a base and the  review text
-prompt_title = "Write a title of less than 10 words for each of the following 3 restaurant reviews. Use a numbered list with a colon (:) as the separator between the number and the title: " + prompt_text
+prompt_title = "Write a title of less than 10 words for each of the following 3 restaurant reviews. Mark the beginning of each title with a sequential number followed by a colon (:). Separate each title with this text: **separator**. The reviews are: " + prompt_text
 prompt_title
 
 #Contact GPT3 to create the review and extract the text of the response (the title)
@@ -103,11 +105,8 @@ response = openai.Completion.create(
   temperature=0.7
 )
 
-# titles = response["choices"][0]["text"]
-# titles = list(titles.split(sep="\n\n"))
-# titles = titles[1:]
-
 titles = response_extract(response["choices"][0]["text"])
+titles = titles.strip()
 
 #Loop through the reviews and titles to create the records value
 #Write the titles and responses in the review table using the correct foreign key value
