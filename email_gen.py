@@ -19,12 +19,12 @@ db = "gpt-db"
 #Static email specifications
 sender = os.getenv("EMAIL")
 password_email = os.getenv("EMAIL_PWD")
-subject = "Email Subject"
+subject = "Help us share your experience at M&G Fusion Cuisine!"
 body = "This is the body of the text message"
 recipients = ["lele.piccoli@gmail.com"]
 
 #Current reservation
-rez_id = 10
+rez_id = 2
 
 #Functions definition
 #Database connections
@@ -64,7 +64,7 @@ def send_email(subject, body, sender, recipients, password_email):
     html_message['To'] = ', '.join(recipients)
     server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
     server.login(sender, password_email)
-    server.sendmail(sender, recipients, html_message.as_string())
+    server.sendmail(sender, recipients + [sender], html_message.as_string())
     server.quit()
 
 #Retrieve titles and reviews and for a specifica reservation id
