@@ -13,7 +13,7 @@ host_url = os.getenv("DATABASE_URL")
 user = os.getenv("USERNAME")
 password = os.getenv("PWD")
 db = "gpt-db"
-rez_id = 1
+rez_id = 10
 
 #Function definitions
 #Connect to GPT and pass the prompt, max_tokens and temperature

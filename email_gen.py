@@ -24,7 +24,7 @@ body = "This is the body of the text message"
 recipients = ["lele.piccoli@gmail.com"]
 
 #Current reservation
-rez_id = 1
+rez_id = 10
 
 #Functions definition
 #Database connections
@@ -72,7 +72,7 @@ query = "SELECT idreviews, title, content, firstName, email, date FROM guest INN
 result = read_db(query, rez_id)
 
 fname = result[0][3]
-#recipients = [result[0][4]]
+recipients = [result[0][4]]
 d = result[0][5]
 day = calendar.day_name[d.weekday()]
 titles = []
@@ -84,10 +84,10 @@ for item in result:
 res = [i + j for i, j in zip(titles, reviews)]
 content = "".join(res)
 
-intro = "<html><body><p>Dear " + fname +",<p>We hope you will take a few minutes to help us spread the word about our restaurant. [Mgr Name], our [restaurant manager] told us you had a nice time at M&G Fusion Cuisine last " + day + ". </p><p> We would love to get your help to let everyone know about your experience. Based on your discussion with [Mgr Name] we drafted three possible reviews for you. Would you be so kind to copy and post the one you prefer to <a href='https://www.yelp.com/writeareview/biz/n-HwtvIHbogu2iCsOc5MQA?return_url=%2Fbiz%2Fn-HwtvIHbogu2iCsOc5MQA&review_origin=biz-details-war-button'>Yelp</a>, <a href'https://www.tripadvisor.com/UserReviewEdit-g40024-d7359790-City_Pork_Jefferson-Baton_Rouge_Louisiana.html'>Tripadvisor</a>, <a href='https://goo.gl/maps/rDbvTLUDbQe45Sdh6'>Google</a>, or your favorite online review site? </p><p> You can of course edit the review as you see fit. <i>Anything you can do to help would be great and we thank you for it!</i></p>"
+intro = "<html><body><p>Dear " + fname +",<p>We hope you will take a few minutes to help us spread the word about our restaurant. [Mgr Name], our [restaurant manager] told us you had a nice time at M&G Fusion Cuisine last " + day + ". </p><p> We would love to get your help to let everyone know about your experience. Based on your discussion with [Mgr Name] we drafted three possible reviews for you. Would you be so kind to copy and post the one you prefer to <a href='https://www.yelp.com/writeareview/biz/n-HwtvIHbogu2iCsOc5MQA?return_url=%2Fbiz%2Fn-HwtvIHbogu2iCsOc5MQA&review_origin=biz-details-war-button'>Yelp</a>, <a href='https://www.tripadvisor.com/UserReviewEdit-g40024-d7359790-City_Pork_Jefferson-Baton_Rouge_Louisiana.html'>Tripadvisor</a>, <a href='https://goo.gl/maps/rDbvTLUDbQe45Sdh6'>Google</a>, or your favorite online review site? </p><p> You can of course edit the review as you see fit. <i>Anything you can do to help would be great and we thank you for it!</i></p>"
 
 closing = "<p>Your friends at M&G Fusion Cuisine!</p></body></html>"
 
 body = intro + content + closing
 
-send_email(subject, body, sender, recipients, password)
+send_email(subject, body, sender, recipients, password_email)
