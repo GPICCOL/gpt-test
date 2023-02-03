@@ -54,7 +54,8 @@ def connect_db(query_arg, vals=[]):
     print(e)
   return query_result
 
-#GPT response extraction function
+#GPT response extraction function - 
+#ERRORS: when the response is messy and we dont have the normal structure it breaks need to do a check, if there are not three elements, kick out and inquire agian with GPT and catch any other error gracefully
 def response_extract(gpt_text):
   responses = gpt_text.strip()
   responses = ''.join(responses.splitlines())
@@ -84,39 +85,28 @@ prompt_text = prompt_base + prompt_text
 #Contact GPT3 to create the review and extract the text of the response
 response = invoke_gpt(prompt_text, 300)
 
-# response = openai.Completion.create(
-#   model="text-davinci-003",
-#   prompt=prompt_text,
-#   max_tokens=300,
-#   temperature=0.7
-# )
-
-prompt_text = response_extract(response["choices"][0]["text"])
+reviews = response_extract(response["choices"][0]["text"])
 
 #Create the prompt for the title using a base and the  review text
-prompt_title = "Write a title of less than 10 words for each of the following 3 restaurant reviews. Mark the beginning of each title with a sequential number followed by a colon (:). Separate each title with this text: **separator**. The reviews are: " + prompt_text
-prompt_title
+prompt_title = "Write a title of less than 10 words for each of the following 3 restaurant reviews. Mark the beginning of each title with a sequential number followed by a colon (:). Separate each title with this text: **separator**. The reviews are: " + reviews
 
 #Contact GPT3 to create the review and extract the text of the response (the title)
-response = openai.Completion.create(
-  model="text-davinci-003",
-  prompt=prompt_title,
-  max_tokens=120,
-  temperature=0.7
-)
+response = invoke_gpt(prompt_title, 120)
 
 titles = response_extract(response["choices"][0]["text"])
-titles = titles.strip()
 
-#Loop through the reviews and titles to create the records value
+#Format titles and reviews for INSERT query
+titles = list(titles.split(";"))
+reviews = list(reviews.split(";"))
+records = []
+for i in range(0, len(titles)):
+  title = titles[i].strip()
+  review = reviews[i].strip()
+  records.append((title, review, rez_id))
+
 #Write the titles and responses in the review table using the correct foreign key value
 query = "INSERT INTO reviews (title, content, rez_idrez) VALUES (%s, %s, %s)"
-# for item in items:
-#   # TODO: write code...
-records = [
-  (title, review, rez_id),
-  # ("title4", "content4", rez_id),
-  ]
+
 connect_db(query, records)
 
 
