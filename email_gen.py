@@ -1,9 +1,10 @@
 import os
 import json
-import smtplib
 import datetime
 import calendar
+import smtplib
 
+from email.mime.text import MIMEText
 from mysql.connector import connect, Error
 
 from dotenv import load_dotenv
@@ -12,15 +13,15 @@ load_dotenv()
 #Database specifications
 host_url = os.getenv("DATABASE_URL")
 user = os.getenv("USERNAME")
-password = os.getenv("PWD")
+password_db = os.getenv("PWD")
 db = "gpt-db"
 
 #Static email specifications
-SERVER = "localhost"
-EMAIL_PWD = os.getenv("EMAIL_PWD")
-PORT = 1025
-FROM = "mng.fusion.cuisine@gmail.com"
-SUBJECT = "We hope you can help us!"
+sender = os.getenv("EMAIL")
+password_email = os.getenv("EMAIL_PWD")
+subject = "Email Subject"
+body = "This is the body of the text message"
+recipients = ["lele.piccoli@gmail.com"]
 
 #Current reservation
 rez_id = 1
@@ -33,7 +34,7 @@ def read_db(query_arg, vals=[]):
     with connect(
         host=host_url,
         user=user,
-        password=password,
+        password=password_db,
         database=db
     ) as connection:
         if query_type == "SELECT":
@@ -47,38 +48,46 @@ def read_db(query_arg, vals=[]):
     print(e)
   return query_result
 
+#Function for sending emails
+def send_email(subject, body, sender, recipients, password_email):
+    # msg = MIMEText(body)
+    # msg['Subject'] = subject
+    # msg['From'] = sender
+    # msg['To'] = ', '.join(recipients)
+    # smtp_server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
+    # smtp_server.login(sender, password)
+    # smtp_server.sendmail(sender, recipients, msg.as_string())
+    # smtp_server.quit()
+    html_message = MIMEText(body, 'html')
+    html_message['Subject'] = subject
+    html_message['From'] = sender
+    html_message['To'] = ', '.join(recipients)
+    server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
+    server.login(sender, password_email)
+    server.sendmail(sender, recipients, html_message.as_string())
+    server.quit()
+
 #Retrieve titles and reviews and for a specifica reservation id
 query = "SELECT idreviews, title, content, firstName, email, date FROM guest INNER JOIN rez ON guest.idguest=rez.guest_idguest INNER JOIN reviews ON rez.idrez=reviews.rez_idrez WHERE rez_idrez = %(rez_idrez)s"
 result = read_db(query, rez_id)
 
 fname = result[0][3]
-TO = [result[0][4]]
+#recipients = [result[0][4]]
 d = result[0][5]
 day = calendar.day_name[d.weekday()]
-
-intro = "Dear " + fname +",\n\n We hope you will take a few minutes to help us spread the word about our restaurant. Our restaurant manager told us you had a nice time at M&G Fusion Cuisine last " + day + ".\n\nWe would love to get your help to let everyone know about your experience. Based on your discussion with [restaurant managere name] we drafted three possible reviews. Would you be so kind to copy and post the one you prefer to your favorite online review site? You can of course edit the review as you see fit. Anything you can do to help would be great and we thank you for it!\n\n"
-
-closing = "\n\nYour friends at M&G Fusion Cuisine!"
-
 titles = []
 reviews = []
 for item in result:
-  titles.append("\n\n" + item[1] + "\n")
-  reviews.append(item[2] + "\n")
+  titles.append("<p><b>" + item[1] + "</b></p>")
+  reviews.append("<p>" + item[2] + "</p>")
   
 res = [i + j for i, j in zip(titles, reviews)]
 content = "".join(res)
 
-TEXT = intro + content + closing
+intro = "<html><body><p>Dear " + fname +",<p>We hope you will take a few minutes to help us spread the word about our restaurant. [Mgr Name], our [restaurant manager] told us you had a nice time at M&G Fusion Cuisine last " + day + ". </p><p> We would love to get your help to let everyone know about your experience. Based on your discussion with [Mgr Name] we drafted three possible reviews for you. Would you be so kind to copy and post the one you prefer to <a href='https://www.yelp.com/writeareview/biz/n-HwtvIHbogu2iCsOc5MQA?return_url=%2Fbiz%2Fn-HwtvIHbogu2iCsOc5MQA&review_origin=biz-details-war-button'>Yelp</a>, <a href'https://www.tripadvisor.com/UserReviewEdit-g40024-d7359790-City_Pork_Jefferson-Baton_Rouge_Louisiana.html'>Tripadvisor</a>, <a href='https://goo.gl/maps/rDbvTLUDbQe45Sdh6'>Google</a>, or your favorite online review site? </p><p> You can of course edit the review as you see fit. <i>Anything you can do to help would be great and we thank you for it!</i></p>"
 
-message = """\
-From: %s
-To: %s
-Subject: %s
+closing = "<p>Your friends at M&G Fusion Cuisine!</p></body></html>"
 
-%s
-""" % (FROM, ",".join(TO), SUBJECT, TEXT)
+body = intro + content + closing
 
-server = smtplib.SMTP(SERVER, PORT)
-server.sendmail(FROM, TO, message)
-server.quit()
+send_email(subject, body, sender, recipients, password)
