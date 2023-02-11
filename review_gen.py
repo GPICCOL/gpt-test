@@ -1,6 +1,8 @@
+import sys
 import os
 import json
 import openai
+assert ('openai' in sys.modules), "The OpenaAI module did not import correclty"
 
 from mysql.connector import connect, Error
 
@@ -13,7 +15,7 @@ host_url = os.getenv("DATABASE_URL")
 user = os.getenv("USERNAME")
 password = os.getenv("PWD")
 db = "gpt-db"
-rez_id = 10
+rez_id = 1
 
 #Function definitions
 #Connect to GPT and pass the prompt, max_tokens and temperature
@@ -24,6 +26,7 @@ def invoke_gpt(text = "tell me something", tokens = 300, temp = 0.7):
     max_tokens=tokens,
     temperature=temp
     )
+    # assert not response, f"The GPT function is returning an empty string"
   return response
 
 #Read and write from a MySQL DB instance function
@@ -55,11 +58,12 @@ def connect_db(query_arg, vals=[]):
   return query_result
 
 #GPT response extraction function - 
-#ERRORS: when the response is messy and we dont have the normal structure it breaks need to do a check, if there are not three elements, kick out and inquire agian with GPT and catch any other error gracefully
+#ERRORS: when the response is messy and we dont have the normal structure it breaks need to do a check, if there are not three elements, kick out and inquire again with GPT and catch any other error gracefully
 def response_extract(gpt_text):
   responses = gpt_text.strip()
   responses = ''.join(responses.splitlines())
   responses = list(responses.split(sep="**separator**"))
+  # assert len(responses) = 3, f"We need three reviews here, but there were {responses}"
   prompt_elements = []
   for res in responses:
     prompt_elements.append(res.split(sep=":")[1])
@@ -70,6 +74,7 @@ def response_extract(gpt_text):
 #retrieve observations for a specifica reservation id
 query = "SELECT type, content FROM observations WHERE rez_idrez = %(rez_idrez)s"
 result = connect_db(query, rez_id)
+assert len(result) > 0, f"You need at least one observation to proceed, you have {result}."
 
 #extract and format the observations from the tuple returned
 prompt_items = []
