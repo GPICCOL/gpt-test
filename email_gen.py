@@ -17,6 +17,7 @@ password_db = os.getenv("PWD")
 db = "gpt-db"
 
 #Static email specifications
+sender_name = "M&G Fusion Cuisine Restaturant"
 sender = os.getenv("EMAIL")
 password_email = os.getenv("EMAIL_PWD")
 subject = "Help us share your experience at M&G Fusion Cuisine!"
@@ -49,18 +50,10 @@ def read_db(query_arg, vals=[]):
   return query_result
 
 #Function for sending emails
-def send_email(subject, body, sender, recipients, password_email):
-    # msg = MIMEText(body)
-    # msg['Subject'] = subject
-    # msg['From'] = sender
-    # msg['To'] = ', '.join(recipients)
-    # smtp_server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
-    # smtp_server.login(sender, password)
-    # smtp_server.sendmail(sender, recipients, msg.as_string())
-    # smtp_server.quit()
+def send_email(name, subject, body, sender, recipients, password_email):
     html_message = MIMEText(body, 'html')
     html_message['Subject'] = subject
-    html_message['From'] = sender
+    html_message['From'] = name
     html_message['To'] = ', '.join(recipients)
     server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
     server.login(sender, password_email)
@@ -93,6 +86,6 @@ closing = "<p>Your friends at M&G Fusion Cuisine!</p></body></html>"
 
 body = intro + content + closing
 
-send_email(subject, body, sender, recipients, password_email)
+send_email(sender_name, subject, body, sender, recipients, password_email)
 
 

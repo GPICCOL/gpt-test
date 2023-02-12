@@ -63,11 +63,13 @@ def response_extract(gpt_text):
   responses = gpt_text.strip()
   responses = ''.join(responses.splitlines())
   responses = list(responses.split(sep="**separator**"))
-  # assert len(responses) = 3, f"We need three reviews here, but there were {responses}"
+  # print(len(responses))
   prompt_elements = []
   for res in responses:
+    print(res)
     prompt_elements.append(res.split(sep=":")[1])
   prompt_elements = "; ".join(prompt_elements)
+  print(prompt_elements)
   return prompt_elements
 
 
@@ -83,7 +85,7 @@ for row in result:
 prompt_text = "; ".join(prompt_items)
 
 #Create the prompt for the review using a base and the observations
-prompt_base = "Write 3 positive restaurant reviews in the syle of Yelp. Vary the degree of emphasis, making one review positive, one very positive and one over the top positive and excited. Keep each review under 100 words and return them as one string of text separating the reviews with this string: **separator**. Do not use any semicolons (;) in the reviews. Use only the following information to write each review: "
+prompt_base = "Write 3 positive restaurant reviews in the syle of Yelp. Vary the degree of emphasis, making one review positive, one very positive and one over the top positive and excited. Keep each review under 100 words. Mark the beginning of each review with a sequential number followed by a colon (:). Use the text **separator** between reviews. Do not use any semicolons (;) in the reviews. Use only the following information to write each review: "
 
 prompt_text = prompt_base + prompt_text
 
@@ -93,7 +95,7 @@ response = invoke_gpt(prompt_text, 300)
 reviews = response_extract(response["choices"][0]["text"])
 
 #Create the prompt for the title using a base and the  review text
-prompt_title = "Write a title of less than 10 words for each of the following 3 restaurant reviews. Mark the beginning of each title with a sequential number followed by a colon (:). Separate each title with this text: **separator**. The reviews are: " + reviews
+prompt_title = "Write a title of less than 10 words for each of the following 3 restaurant reviews. Mark the beginning of each title with a sequential number followed by a colon (:). Use the text **separator** between titles. The reviews are: " + reviews
 
 #Contact GPT3 to create the review and extract the text of the response (the title)
 response = invoke_gpt(prompt_title, 120)
