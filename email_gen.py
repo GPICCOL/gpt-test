@@ -68,14 +68,14 @@ def send_email(subject, body, sender, recipients, password_email):
     server.quit()
 
 #Retrieve titles and reviews and for a specifica reservation id
-query = "SELECT idreviews, title, content, firstName, email, date, name, title FROM guest INNER JOIN rez ON guest.idguest=rez.guest_idguest INNER JOIN reviews ON rez.idrez=reviews.rez_idrez WHERE rez_idrez = %(rez_idrez)s"
-# query = "SELECT idreviews, title, content, firstName, email, date, name, title FROM guest INNER JOIN rez ON guest.idguest=rez.guest_idguest INNER JOIN reviews ON rez.idrez=reviews.rez_idrez INNER JOIN staff ON staff.idstaff=rez.staff_idstaff WHERE rez_idrez = %(rez_idrez)s"
+# query = "SELECT idreviews, title, content, firstName, email, date, name, title FROM guest INNER JOIN rez ON guest.idguest=rez.guest_idguest INNER JOIN reviews ON rez.idrez=reviews.rez_idrez WHERE rez_idrez = %(rez_idrez)s"
+query = "SELECT reviews.idreviews, reviews.title, reviews.content, guest.firstName, guest.email, rez.date, staff.name, staff.title FROM guest INNER JOIN rez ON guest.idguest=rez.guest_idguest INNER JOIN reviews ON rez.idrez=reviews.rez_idrez INNER JOIN staff ON staff.idstaff=rez.staff_idstaff WHERE rez_idrez = %(rez_idrez)s"
 result = read_db(query, rez_id)
 
 fname = result[0][3]
 recipients = [result[0][4]]
-# manager_name =
-# manager_title =
+manager_name = result[0][6]
+manager_title = result[0][7]
 d = result[0][5]
 day = calendar.day_name[d.weekday()]
 titles = []
@@ -87,10 +87,12 @@ for item in result:
 res = [i + j for i, j in zip(titles, reviews)]
 content = "".join(res)
 
-intro = "<html><body><p>Dear " + fname +",<p>We hope you will take a few minutes to help us spread the word about our restaurant. [Mgr Name], our [restaurant manager] told us you had a nice time at M&G Fusion Cuisine last " + day + ". </p><p> We would love to get your help to let everyone know about your experience. Based on your discussion with [Mgr Name] we drafted three possible reviews for you. Would you be so kind to copy and post the one you prefer to <a href='https://www.yelp.com/writeareview/biz/n-HwtvIHbogu2iCsOc5MQA?return_url=%2Fbiz%2Fn-HwtvIHbogu2iCsOc5MQA&review_origin=biz-details-war-button'>Yelp</a>, <a href='https://www.tripadvisor.com/UserReviewEdit-g40024-d7359790-City_Pork_Jefferson-Baton_Rouge_Louisiana.html'>Tripadvisor</a>, <a href='https://goo.gl/maps/rDbvTLUDbQe45Sdh6'>Google</a>, or your favorite online review site? </p><p> You can of course edit the review as you see fit. <i>Anything you can do to help would be great and we thank you for it!</i></p>"
+intro = "<html><body><p>Dear " + fname +",<p>We hope you will take a few minutes to help us spread the word about our restaurant.  " + manager_name+ ", our " + manager_title + " told us you had a nice time at M&G Fusion Cuisine last " + day + ". </p><p> We would love your help to let everyone know about your experience. Based on your discussion with " + manager_name + " we drafted three possible reviews for you. Would you be so kind to copy and post the one you prefer to <a href='https://www.yelp.com/writeareview/biz/n-HwtvIHbogu2iCsOc5MQA?return_url=%2Fbiz%2Fn-HwtvIHbogu2iCsOc5MQA&review_origin=biz-details-war-button'>Yelp</a>, <a href='https://www.tripadvisor.com/UserReviewEdit-g40024-d7359790-City_Pork_Jefferson-Baton_Rouge_Louisiana.html'>Tripadvisor</a>, <a href='https://goo.gl/maps/rDbvTLUDbQe45Sdh6'>Google</a>, or your favorite online review site? </p><p> You can of course edit the review as you see fit. <i>Anything you can do to help would be great and we thank you for it!</i></p>"
 
 closing = "<p>Your friends at M&G Fusion Cuisine!</p></body></html>"
 
 body = intro + content + closing
 
 send_email(subject, body, sender, recipients, password_email)
+
+
