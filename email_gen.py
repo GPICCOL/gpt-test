@@ -25,7 +25,7 @@ body = "This is the body of the text message"
 recipients = ["lele.piccoli@gmail.com"]
 
 #Current reservation
-rez_id = 1
+rez_id = 2
 
 #Functions definition
 #Database connections
@@ -61,7 +61,6 @@ def send_email(name, subject, body, sender, recipients, password_email):
     server.quit()
 
 #Retrieve titles and reviews and for a specifica reservation id
-# query = "SELECT idreviews, title, content, firstName, email, date, name, title FROM guest INNER JOIN rez ON guest.idguest=rez.guest_idguest INNER JOIN reviews ON rez.idrez=reviews.rez_idrez WHERE rez_idrez = %(rez_idrez)s"
 query = "SELECT reviews.idreviews, reviews.title, reviews.content, guest.firstName, guest.email, rez.date, staff.name, staff.title FROM guest INNER JOIN rez ON guest.idguest=rez.guest_idguest INNER JOIN reviews ON rez.idrez=reviews.rez_idrez INNER JOIN staff ON staff.idstaff=rez.staff_idstaff WHERE rez_idrez = %(rez_idrez)s"
 result = read_db(query, rez_id)
 
