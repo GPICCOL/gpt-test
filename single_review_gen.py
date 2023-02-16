@@ -13,7 +13,7 @@ load_dotenv()
 openai.api_key = os.getenv("OPENAI_API_KEY")
 host_url = os.getenv("DATABASE_URL")
 user = os.getenv("USERNAME")
-password = os.getenv("PWD")
+password_db = os.getenv("PWD")
 db = "gpt-db"
 
 #Function definitions - DB Functions
@@ -24,7 +24,7 @@ def read_db(query_arg, vals=[]):
     with connect(
         host=host_url,
         user=user,
-        password=password,
+        password=password_db,
         database=db
     ) as connection:
         if query_type == "SELECT":
@@ -45,7 +45,7 @@ def write_db(query_arg, vals=[]):
     with connect(
         host=host_url,
         user=user,
-        password=password,
+        password=password_db,
         database=db
     ) as connection:
         if query_type == "INSERT":
@@ -54,7 +54,7 @@ def write_db(query_arg, vals=[]):
             cursor.executemany(write_query, vals)
             # cursor.execute(write_query, vals)
             connection.commit()
-            query_result = "INSERT query executed, inserted row:" # + cursor.rowcount
+            query_result = "INSERT query executed, inserted row:" + str(cursor.rowcount)
         else:
           query_result = "This function handles only INSERT queries"
   except Error as e:
@@ -71,14 +71,14 @@ def change_status(reservation_id, status):
     with connect(
         host=host_url,
         user=user,
-        password=password,
+        password=password_db,
         database=db
     ) as connection:
       with connection.cursor() as cursor:
         cursor.executemany(update_query, vals)
         # cursor.execute(write_query, vals)
         connection.commit()
-        query_result = "UPDATE query executed, updates rows:" # + cursor.rowcount
+        query_result = "UPDATE query executed, updates rows:" + str(cursor.rowcount)
   except Error as e:
     print(e)
   return query_result
@@ -158,7 +158,7 @@ for id in observed_rezids:
 #rez_id = [item for id in observed_rezids for item in id]
 
 level = ["positive", "very positive", "over the top positive and excited"]
-rez_id =  [x for x in rez_id if x < 3]
+#rez_id =  [x for x in rez_id if x < 3]
 for id in rez_id:
   records = []
   for i in range(0, len(level)):
@@ -167,9 +167,11 @@ for id in rez_id:
     records.append((title, review, id))
     #Write the titles and responses in the review table using the correct foreign key value
   query = "INSERT INTO reviews (title, content, rez_idrez) VALUES (%s, %s, %s)"
-  write_db(query, records)
+  writing_status = write_db(query, records)
+  writing_status
     #written_records = write_reviews(id, level)
-written_status = change_status(rez_id, status = "Reviewed")
+update_status = change_status(rez_id, status = "Reviewed")
+update_status
 
 
 
