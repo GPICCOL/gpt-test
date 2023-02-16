@@ -54,7 +54,7 @@ def write_db(query_arg, vals=[]):
             cursor.executemany(write_query, vals)
             # cursor.execute(write_query, vals)
             connection.commit()
-            query_result = "INSERT query executed"
+            query_result = "INSERT query executed, inserted row:" # + cursor.rowcount
         else:
           query_result = "This function handles only INSERT queries"
   except Error as e:
@@ -63,8 +63,10 @@ def write_db(query_arg, vals=[]):
 
 #Function: Change status of reviews
 def change_status(reservation_id, status):
-  update_query = "UPDATE rez SET rev_status = %(field_name)s WHERE idrez = %(field_name)s"
+  update_query = "UPDATE rez SET rev_status = %s WHERE idrez = %s"
   vals=[]
+  for id in reservation_id:
+    vals.append((status, id))
   try:
     with connect(
         host=host_url,
@@ -76,7 +78,7 @@ def change_status(reservation_id, status):
         cursor.executemany(update_query, vals)
         # cursor.execute(write_query, vals)
         connection.commit()
-        query_result = "UPDATE query executed"
+        query_result = "UPDATE query executed, updates rows:" # + cursor.rowcount
   except Error as e:
     print(e)
   return query_result
@@ -131,16 +133,16 @@ def make_titles(review_text):
   return title
 
 #Function: Exctract title and reviews, write to DB
-def write_reviews(reservation_id, style = "Yelp", level = ["positive", "very positive", "over the top positive and excited"]):
-  records = []
-  for i in range(0, len(level)):
-    review = make_reviews(reservation_id, level[i])
-    title = make_titles(review)
-    records.append((title, review, reservation_id))
-  #Write the titles and responses in the review table using the correct foreign key value
-  query = "INSERT INTO reviews (title, content, rez_idrez) VALUES (%s, %s, %s)"
-  write_db(query, records)
-  return records
+# def write_reviews(reservation_id, style = "Yelp", level = ["positive", "very positive", "over the top positive and excited"]):
+#   records = []
+#   for i in range(0, len(level)):
+#     review = make_reviews(reservation_id, level[i])
+#     title = make_titles(review)
+#     records.append((title, review, reservation_id))
+#   #Write the titles and responses in the review table using the correct foreign key value
+#   query = "INSERT INTO reviews (title, content, rez_idrez) VALUES (%s, %s, %s)"
+#   write_db(query, records)
+#   return records
 
 ##Main program
 #retrieve reservation ID of rez with observations
@@ -158,5 +160,16 @@ for id in observed_rezids:
 level = ["positive", "very positive", "over the top positive and excited"]
 rez_id =  [x for x in rez_id if x < 3]
 for id in rez_id:
-  written_records = write_reviews(id, level)
-  #written_status = change_status(id, status = "Reviewed")
+  records = []
+  for i in range(0, len(level)):
+    review = make_reviews(id, level[i])
+    title = make_titles(review)
+    records.append((title, review, id))
+    #Write the titles and responses in the review table using the correct foreign key value
+  query = "INSERT INTO reviews (title, content, rez_idrez) VALUES (%s, %s, %s)"
+  write_db(query, records)
+    #written_records = write_reviews(id, level)
+written_status = change_status(rez_id, status = "Reviewed")
+
+
+
