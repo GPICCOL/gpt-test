@@ -15,7 +15,6 @@ host_url = os.getenv("DATABASE_URL")
 user = os.getenv("USERNAME")
 password = os.getenv("PWD")
 db = "gpt-db"
-# rez_id = 1
 
 #Function definitions
 #Function: Connect to GPT and pass the prompt, max_tokens and temperature
@@ -74,26 +73,16 @@ def write_db(query_arg, vals=[]):
   return query_result
 
 #Function: GPT response extraction function - 
-#ERRORS: when the response is messy and we dont have the normal structure it breaks need to do a check, if there are not three elements, kick out and inquire again with GPT and catch any other error gracefully
 def response_extract(gpt_text):
-  responses = gpt_text.strip()
-  responses = ''.join(responses.splitlines())
-  responses = list(responses.split(sep="**separator**"))
-  # print(len(responses))
-  prompt_elements = []
-  for res in responses:
-    print(res)
-    prompt_elements.append(res.split(sep=":")[1])
-  prompt_elements = "; ".join(prompt_elements)
-  print(prompt_elements)
-  return prompt_elements
+  response = gpt_text.strip()
+  response = ''.join(response.splitlines())
+  return response
 
 #Function: Make Reviews
-def make_reviews(reservation_number):
-  rez_id = reservation_number
+def make_reviews(reservation_number, style = "Yelp", level = "positive"):
   #retrieve observations for a specifica reservation id
   query = "SELECT type, content FROM observations WHERE rez_idrez = %(field_name)s"
-  result = read_db(query, rez_id)
+  result = read_db(query, reservation_number)
   assert len(result) > 0, f"You need at least one observation to proceed, you have {result}."
 
   #extract and format the observations from the tuple returned
@@ -103,42 +92,43 @@ def make_reviews(reservation_number):
   prompt_text = "; ".join(prompt_items)
 
   #Create the prompt for the review using a base and the observations
-  prompt_base = "Write 3 positive restaurant reviews in the syle of Yelp. Vary the degree of emphasis, making one review positive, one very positive and one over the top positive and excited. Keep each review under 100 words. Mark the beginning of each review with a sequential number followed by a colon (:). Use the text **separator** between reviews. Do not use any semicolons (;) in the reviews. Use only the following information to write each review: "
+  prompt_base = "Write a " + level + " restaurant reviews in the syle of " + style + ". Keep the review under 120 words. Use only the following information to write the review: "
   
   prompt_text = prompt_base + prompt_text
   
   #Contact GPT3 to create the review and extract the text of the response
   #This is where I can loop and repeat if I have errors
   response = invoke_gpt(prompt_text, 300)
-  reviews = response_extract(response["choices"][0]["text"])
-  return reviews
+  review = response_extract(response["choices"][0]["text"])
+  return review
 
 #Function: Make titles
 def make_titles(review_text):
-  print(type(review_text))
   #Create the prompt for the title using a base and the  review text
-  prompt_title = "Write a title of less than 10 words for each of the following 3 restaurant reviews. Mark the beginning of each title with a sequential number followed by a colon (:). Use the text **separator** between titles. The reviews are: " + review_text
+  prompt_title = "Write a title of less than 10 words for the following restaurant reviews. The review is: " + review_text
   
   #Contact GPT3 to create the review and extract the text of the response (the title)
   response = invoke_gpt(prompt_title, 120)
   
-  titles = response_extract(response["choices"][0]["text"])
-  return titles
+  title = response_extract(response["choices"][0]["text"])
+  return title
 
 #Function: Exctract title and reviews, write to DB
-def write_reviews(title_list, review_list):
-  #Format titles and reviews for INSERT query
-  titles = list(title_list.split(";"))
-  reviews = list(review_list.split(";"))
+def write_reviews(reservation_id, style = "Yelp", level = ["positive", "very positive", "over the top positive and excited"]):
   records = []
-  for i in range(0, len(titles)):
-    title = titles[i].strip()
-    review = reviews[i].strip()
-    records.append((title, review, rez_id))
+  for i in range(0, len(level)):
+    review = make_reviews(reservation_id, level[i])
+    title = make_titles(review)
+    records.append((title, review, reservation_id))
   
   #Write the titles and responses in the review table using the correct foreign key value
   query = "INSERT INTO reviews (title, content, rez_idrez) VALUES (%s, %s, %s)"
   write_db(query, records)
+
+#Function: Change status of review to Reviewed
+def change_status(reservation_id, status):
+  query = "UPDATE rez SET rev_status = %(field_name)s WHERE idrez = %(field_name)s"
+
 
 
 ##Main program
@@ -154,13 +144,8 @@ for id in observed_rezids:
 #loop above is the same as list compression syntax (which i need to understand): 
 #rez_id = [item for id in observed_rezids for item in id]
 
+level = ["positive", "very positive", "over the top positive and excited"]
 rez_id =  [x for x in rez_id if x < 3]
 for id in rez_id:
-  print(id)
-  reviews = make_reviews(id)
-  titles = make_titles(reviews)
-  write_reviews(titles, reviews)
-
-
-
-
+  write_reviews(id, level)
+  change_status(id, status = "Reviewed")
