@@ -2,11 +2,11 @@ import sys
 import os
 import json
 import openai
-assert ('openai' in sys.modules), "The OpenaAI module did not import correclty"
+assert ('openai' in sys.modules), "The OpenaAI module did not import correctly"
 
 from mysql.connector import connect, Error
 
-#read environment and import environment variables
+# Read environment and import environment variables
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -16,8 +16,8 @@ user = os.getenv("USERNAME")
 password_db = os.getenv("PWD")
 db = "gpt-db"
 
-#Function definitions - DB Functions
-#Function: Read from a MySQL DB instance
+# Function definitions - DB Functions
+# Function: Read from a MySQL DB instance
 def read_db(query_arg, vals=[]):
   query_type = query_arg.upper().split(' ', 1)[0]
   try:
@@ -38,7 +38,7 @@ def read_db(query_arg, vals=[]):
     print(e)
   return query_result
 
-#Function: Write to a MySQL DB instance 
+# Function: Write to a MySQL DB instance 
 def write_db(query_arg, vals=[]):
   query_type = query_arg.upper().split(' ', 1)[0]
   try:
@@ -61,7 +61,7 @@ def write_db(query_arg, vals=[]):
     print(e)
   return query_result
 
-#Function: Change status of reviews
+# Function: Change status of reviews
 def change_status(reservation_id, status):
   update_query = "UPDATE rez SET rev_status = %s WHERE idrez = %s"
   vals=[]
@@ -83,8 +83,8 @@ def change_status(reservation_id, status):
     print(e)
   return query_result
 
-#Function definitions - GPT Functions
-#Function: Connect to GPT and pass the prompt, max_tokens and temperature
+# Function definitions - GPT Functions
+# Function: Connect to GPT and pass the prompt, max_tokens and temperature
 def invoke_gpt(text = "tell me something", tokens = 300, temp = 0.7):
   try:
     response = openai.Completion.create(
@@ -97,28 +97,37 @@ def invoke_gpt(text = "tell me something", tokens = 300, temp = 0.7):
     print(e)
   return response
 
-#Function: GPT response extraction function - 
+# Function: GPT response extraction function - 
 def response_extract(gpt_text):
   response = gpt_text.strip()
   response = ''.join(response.splitlines())
   return response
 
-#Function: Make Reviews
+
+# This is the custom function that creates reviews. It first
+# queries the database to see if there are any observations wihtout
+# a review. 
+#
+# This function then cals the OpenAI GPT API to create one review
+# at a time.
 def make_reviews(reservation_number, style = "Yelp", level = "positive"):
-  #retrieve observations for a specifica reservation id
   query = "SELECT type, content FROM observations WHERE rez_idrez = %(field_name)s"
   result = read_db(query, reservation_number)
   assert len(result) > 0, f"You need at least one observation to proceed, you have {result}."
-  #extract and format the observations from the tuple returned
+  
+  # Extract and format the observations from the tuple returned.
   prompt_items = []
   for row in result:
     prompt_items.append(": ".join(map(str, row)))
   prompt_text = "; ".join(prompt_items)
-  #Create the prompt for the review using a base and the observations
-  prompt_base = "Write a " + level + " restaurant reviews in the syle of " + style + ". Keep the review under 120 words. Use only the following information to write the review: "
+ 
+  #Create the prompt for the review using a base and the observations.
+  prompt_base = "Write a " + level + " restaurant reviews in the syle of " + style \
+  + ". Keep the review under 120 words. Use only the following information to write the review: "
   prompt_text = prompt_base + prompt_text
-  #Contact GPT3 to create the review and extract the text of the response
-  #This is where I can loop and repeat if I have errors
+  
+  # Contact GPT3 to create the review and extract the text of the response.
+  # This is where I can loop and repeat if I have errors.
   response = invoke_gpt(prompt_text, 300)
   review = response_extract(response["choices"][0]["text"])
   return review
@@ -126,7 +135,8 @@ def make_reviews(reservation_number, style = "Yelp", level = "positive"):
 #Function: Make titles
 def make_titles(review_text):
   #Create the prompt for the title using a base and the  review text
-  prompt_title = "Write a title of less than 10 words for the following restaurant reviews. The review is: " + review_text
+  prompt_title = "Write a title of less than 10 words for the following \
+  restaurant reviews. The review is: " + review_text
   #Contact GPT3 to create the review and extract the text of the response (the title)
   response = invoke_gpt(prompt_title, 120)
   title = response_extract(response["choices"][0]["text"])
@@ -158,7 +168,11 @@ for id in observed_rezids:
 #rez_id = [item for id in observed_rezids for item in id]
 
 level = ["positive", "very positive", "over the top positive and excited"]
-#rez_id =  [x for x in rez_id if x < 3]
+
+####################
+#rez_id =  [x for x in rez_id if x < 35] ## Control line to LIMIT BY ID
+####################
+
 for id in rez_id:
   records = []
   for i in range(0, len(level)):
