@@ -1,5 +1,6 @@
 import os
 import openai
+import pandas as pd
 
 # Read environment and import environment variables
 from dotenv import load_dotenv
@@ -25,5 +26,3 @@ def response_extract(gpt_text):
   response = ''.join(response.splitlines())
   return response
 
-response = invoke_gpt()
-response_extract(response["choices"][0]["text"])
